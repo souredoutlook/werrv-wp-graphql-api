@@ -1,4 +1,4 @@
-require('dotenv').config({path: '../.env'});
+require('dotenv').config({path: '.env'});
 
 const { SHOP, ACCESS_TOKEN } = process.env;
 
