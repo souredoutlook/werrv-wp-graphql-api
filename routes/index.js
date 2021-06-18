@@ -1,9 +1,18 @@
 require('dotenv').config({path: '.env'});
 
-const { SHOP, ACCESS_TOKEN } = process.env;
+const { SHOP, ACCESS_TOKEN, DB_HOST, DB_USER, DB_PASSWORD, DATABASE } = process.env;
 
 const express = require('express');
 const router = express.Router();
+
+var mysql      = require('mysql');
+var connection = mysql.createConnection({
+  host     : DB_HOST,
+  user     : DB_USER,
+  password : DB_PASSWORD,
+  database : DATABASE
+});
+
 const { query, generateVariables } = require('../helpers/discounts');
 
 
