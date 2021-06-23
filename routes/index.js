@@ -19,7 +19,7 @@ const { query, generateVariables } = require('../helpers/discounts');
 
 module.exports = (fetch) => {
 
-  router.get('/:identifier', function(req, res) {
+  router.get('/:identifier', function (req, res) {
 
     console.log(req.params);
     const {identifier} = req.params;
@@ -90,7 +90,7 @@ module.exports = (fetch) => {
 
   });
 
-  router.post('/', function(req, res) {
+  router.post('/', function (req, res) {
 
     console.log(req.body);
 
