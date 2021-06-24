@@ -25,6 +25,7 @@ module.exports = (fetch) => {
     const {identifier} = req.params;
     console.log(identifier);
 
+    //in some cases WP can send undefined as the identifier
     if (identifier !== 'undefined') {
 
       const query_ID_from_user_login = `SELECT * FROM jce_users WHERE user_login = ?`;
@@ -59,23 +60,91 @@ module.exports = (fetch) => {
                     }
                   }
                 }
-      
-                let responseString = `
-                You have already generated ${codes.length} of 3 discount codes.
-                ${codes.length === 3 ? 'Please reach out to Werrv directly to create more.' : ''}
-                Your discount code${codes.length === 1 ? ' is' : 's are'}:
-                `;
-      
-                for (let i = 0; i < codes.length; i++) {
-                  if (i + 1 === codes.length) {
-                    responseString += `${codes[i]}.`
+
+                const promiseArray = [];
+                //send out to shopify and confirm the codes
+                for (const code of codes) {
+                  promiseArray.push(
+                    fetch(`https://${SHOP}.myshopify.com/admin/api/graphql.json`, {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      "X-Shopify-Access-Token": ACCESS_TOKEN
+                    },
+                    body: JSON.stringify({ query: `
+                      {
+                        codeDiscountNodeByCode(code: "${code}") {
+                          codeDiscount {
+                            __typename
+                            ... on DiscountCodeBasic {
+                              title
+                            }
+                          }
+                        }
+                      }                    
+                    `})
+                    })
+                    .then(result => {
+                      return result.json();
+                    })
+                    .then(json => {
+                      const { data } = json;
+                
+                      if (data && data.codeDiscountNodeByCode) {
+                        const { title } = data.codeDiscountNodeByCode.codeDiscount;
+                        // titles are patterned user.name.code 
+                        const shopifyIdentifier = title.split('.').slice(0,2).join('.');
+                        const shopifyCode = title.split('.').slice(2)[0];
+                        return ({shopifyIdentifier, shopifyCode});
+                      } else {
+                        return null;
+                      }
+                    })
+                  );
+                }
+
+                Promise.all(promiseArray)
+                .then(responses => {
+                  const validatedCodes = codes.filter((value, index) => {
+                    if (responses[index]) {
+                      const {shopifyIdentifier, shopifyCode} = responses[index];
+                      if (value === shopifyCode && identifier === shopifyIdentifier) {
+                        return true;
+                      } else {
+                        //code exists but doesnt belong to the identified user
+                        return false;
+                      }
+                    } else {
+                      //response[index] is null
+                      return false;
+                    }
+                  });
+                  
+                  let responseString = `
+                  You have already generated ${validatedCodes.length} of 3 discount codes.
+                  ${validatedCodes.length === 3 ? 'Please reach out to Werrv directly to create more.' : ''}
+                  Your discount code${validatedCodes.length === 1 ? ' is' : 's are'}:
+                  `;
+        
+                  for (let i = 0; i < validatedCodes.length; i++) {
+                    if (i + 1 === validatedCodes.length) {
+                      //add a period on the last code
+                      responseString += `${validatedCodes[i]}.`
+                    } else {
+                      responseString += `${validatedCodes[i]}, `
+                    }
+                  };
+
+                  if (validatedCodes.length > 0) {
+                    //send back a list of validated codes
+                    res.send({count: validatedCodes.length, responseString});
                   } else {
-                    responseString += `${codes[i]}, `
+                    //the user has some code requests but they have failed or are duplicates
+                    res.send({count: 0, responseString: `It look's like you haven't created any discount codes yet...`})
                   }
-                };
-      
-                res.send({count: codes.length, responseString});
+                }); 
               } else {
+                //the user has made no code requests
                 res.send({count: 0, responseString: `It look's like you haven't created any discount codes yet...`})
               }
             }
