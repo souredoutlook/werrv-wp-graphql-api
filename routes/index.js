@@ -32,7 +32,7 @@ module.exports = (fetch) => {
       pool.query(query_ID_from_user_login, [identifier], function (error, results, fields) {
         if (error) {
           //issue with identifier
-          res.send(400, 'Something went wrong while fetching your current discount codes...');
+          res.status(400).send('Something went wrong while fetching your current discount codes...');
         } else {
           const { ID } = results[0];
           
@@ -41,7 +41,7 @@ module.exports = (fetch) => {
           pool.query(query_fields_from_user_id, [ID], function (error, results, fields) {
             if (error) {
               //this shouldn't happen
-              res.send(400, 'Something went wrong while fetching your current discount codes...');
+              res.status(400).send('Something went wrong while fetching your current discount codes...');
             } else {
               if (results.length > 0) {
                 const codes = [];
@@ -85,7 +85,7 @@ module.exports = (fetch) => {
   
     } else {
       //WPforms sends undefined
-      res.send(400, 'Something went wrong while fetching your current discount codes...');  
+      res.status(400).send('Something went wrong while fetching your current discount codes...');  
     }
 
   });
