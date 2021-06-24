@@ -188,56 +188,56 @@ module.exports = (fetch) => {
     
             if (codeDiscountNode) {
 
-              // console.log(codeDiscountNode)
+              console.log(codeDiscountNode)
               
-              // //modify this to send the discount code and discount code url
-              // fetch(`https://${SHOP}.myshopify.com/admin/api/graphql.json`, {
-              // method: "POST",
-              // headers: {
-              //   "Content-Type": "application/json",
-              //   "X-Shopify-Access-Token": ACCESS_TOKEN
-              // },
-              // body: JSON.stringify({ query: `
-              // { node(id: "${codeDiscountNode.id}") {
-              //     ... on DiscountCodeNode {
-              //       codeDiscount {
-              //         __typename
-              //         ... on DiscountCodeBasic {
-              //           title
-              //           summary
-              //           codes(first: 5) {
-              //             edges {
-              //               node {
-              //                 code
-              //               }
-              //             }
-              //           }
-              //         }
-              //       }
-              //     }
-              //   }
-              // }
-              // `})
-              // })
-              // .then(result => {
-              //   return result.json();
-              // })
-              // .then(json => {
-              //   const {data} = json;
-              //   console.log(json);
-                res.send(codeDiscountNode.id);
-              // })
+              //modify this to send the discount code and discount code url
+              fetch(`https://${SHOP}.myshopify.com/admin/api/graphql.json`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-Shopify-Access-Token": ACCESS_TOKEN
+              },
+              body: JSON.stringify({ query: `
+                {
+                  codeDiscountNode(id: "${codeDiscountNode.id}") {
+                    codeDiscount {
+                      __typename
+                      ... on DiscountCodeBasic {
+                        title
+                        summary
+                      }
+                    }
+                  }
+                }
+              `})
+              })
+              .then(result => {
+                return result.json();
+              })
+              .then(json => {
+                console.log(json);
+                const {data, errors } = json;
+                console.log(data, errors);
+                if (errors) {
+                  res.status(400).send('Something went wrong when trying to make your new discount code...')
+                } else {
+                  const { summary } = data.codeDiscountNode.codeDiscount;
+                  const responseString = `Congratulations! You have successfully created code: "${discountCodeName}". With the following description: ${summary}. Please copy the link automatic discount link below and share with your customers. Happy shopping!`;
+                  const url = `https://werrv.ca/discount/${encodeURIComponent(discountCodeName)}`
+                  res.send({responseString, url})
+                }
+              });
             } else {
               //design decision: send the first error, as errors are resolved the list will shrink to zero
-              res.send(400, userErrors[0].message);
+              res.status(400).send(userErrors[0].message);
             }
           }
         });
       } else {  
-        res.send(400, "Some fields are invalid.");
+        res.status(400).send(400, "Some fields are invalid.");
       }
     } else {
-        res.send(400, "Some required fields are missing.");
+        res.status(400).send(400, "Some required fields are missing.");
     }
   });
 
