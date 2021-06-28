@@ -1,38 +1,91 @@
-const express = require('express');
-const logger = require('morgan');
-const bodyParser = require('body-parser');
-const cors = require('cors');
+#!/usr/bin/env node
 
-const Sentry = require("@sentry/node");
+require('dotenv').config({path: '.env'});
 
-const fetch = require("node-fetch");
+/**
+ * Module dependencies.
+ */
 
-const indexRouter = require('./routes/index');
+const app = require('./server');
+const http = require('http');
 
-const app = express();
+/**
+ * Get port from environment and store in Express.
+ */
 
-Sentry.init({ dsn: "https://84c7e2e6d3344ffdaf2b4ab8c9fd74df@o676634.ingest.sentry.io/5829638" });
+const port = normalizePort(process.env.PORT || '3000');
+app.set('port', port);
 
-// The request handler must be the first middleware on the app
-app.use(Sentry.Handlers.requestHandler());
+/**
+ * Create HTTP server.
+ */
 
-app.use(logger('dev'));
-app.use(cors());
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
+const server = http.createServer(app);
 
-app.use('/', indexRouter(fetch));
+/**
+ * Listen on provided port, on all network interfaces.
+ */
 
-// The error handler must be before any other error middleware and after all controllers
-app.use(Sentry.Handlers.errorHandler());
+server.listen(port);
+server.on('error', onError);
+server.on('listening', onListening);
 
-// Optional fallthrough error handler
-app.use(function onError(err, req, res, next) {
-  // The error id is attached to `res.sentry` to be returned
-  // and optionally displayed to the user for support.
-  res.statusCode = 500;
-  res.end(res.sentry + "\n");
-});
+/**
+ * Normalize a port into a number, string, or false.
+ */
 
+function normalizePort(val) {
+  const port = parseInt(val, 10);
 
-module.exports = app;
+  if (isNaN(port)) {
+    // named pipe
+    return val;
+  }
+
+  if (port >= 0) {
+    // port number
+    return port;
+  }
+
+  return false;
+}
+
+/**
+ * Event listener for HTTP server "error" event.
+ */
+
+function onError(error) {
+  if (error.syscall !== 'listen') {
+    throw error;
+  }
+
+  const bind = typeof port === 'string'
+    ? 'Pipe ' + port
+    : 'Port ' + port;
+
+  // handle specific listen errors with friendly messages
+  switch (error.code) {
+    case 'EACCES':
+      console.error(bind + ' requires elevated privileges');
+      process.exit(1);
+      break;
+    case 'EADDRINUSE':
+      console.error(bind + ' is already in use');
+      process.exit(1);
+      break;
+    default:
+      throw error;
+  }
+}
+
+/**
+ * Event listener for HTTP server "listening" event.
+ */
+
+function onListening() {
+  const addr = server.address();
+  const bind = typeof addr === 'string'
+    ? 'pipe ' + addr
+    : 'port ' + addr.port;
+  console.log("Listening on", bind);
+}
