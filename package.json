@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "start": "node ./bin/www",
-    "local": "nodemon ./bin/www"
+    "local": "nodemon ./bin/www",
+    "production": "nodemon app"
   },
   "dependencies": {
     "@sentry/node": "^6.7.2",
